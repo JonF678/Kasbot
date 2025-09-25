@@ -55,7 +55,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['SKU','Dish','Price'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Menu sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['SKU','Dish','Price'];if(rows.length===0||cols.size===0){return [{json:{_repair:true,headers:need}}];}const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Menu sheet missing columns: '+miss.join(', '));return [{json:$json}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -65,6 +65,44 @@
       ],
       "id": "node-schema-check-menu",
       "name": "Schema Check: Menu"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);if(rows.length===0){return [{json:{SKU:'SKU',Dish:'Dish',Price:'Price'}}];}return [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3904,
+        1968
+      ],
+      "id": "node-repair-headers-menu",
+      "name": "Repair Headers: Menu"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_MENU_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "SKU": "={{$json.SKU}}",
+            "Dish": "={{$json.Dish}}",
+            "Price": "={{$json.Price}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3680,
+        1968
+      ],
+      "id": "node-gs-append-headers-menu",
+      "name": "GS: Append Headers (menu)"
     },
     {
       "parameters": {
@@ -83,7 +121,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['chat_id','SKU','Dish','Price','Quantity','LineTotal','row_number','Frozen','PaymentStatus','OrderNumber'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Cart sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['Timestamp','chat_id','LineId','SKU','Dish','Price','Quantity','LineTotal','row_number','Frozen','PaymentStatus','OrderNumber'];if(rows.length===0||cols.size===0){return [{json:{_repair:true,headers:need}}];}const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Cart sheet missing columns: '+miss.join(', '));return [{json:$json}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -93,6 +131,53 @@
       ],
       "id": "node-schema-check-cart",
       "name": "Schema Check: Cart"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);if(rows.length===0){return [{json:{Timestamp:'Timestamp',chat_id:'chat_id',LineId:'LineId',SKU:'SKU',Dish:'Dish',Price:'Price',Quantity:'Quantity',LineTotal:'LineTotal',row_number:'row_number',Frozen:'Frozen',PaymentStatus:'PaymentStatus',OrderNumber:'OrderNumber'}}];}return [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3904,
+        2224
+      ],
+      "id": "node-repair-headers-cart",
+      "name": "Repair Headers: Cart"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "LineId": "={{$json.LineId}}",
+            "SKU": "={{$json.SKU}}",
+            "Dish": "={{$json.Dish}}",
+            "Price": "={{$json.Price}}",
+            "Quantity": "={{$json.Quantity}}",
+            "LineTotal": "={{$json.LineTotal}}",
+            "row_number": "={{$json.row_number}}",
+            "Frozen": "={{$json.Frozen}}",
+            "PaymentStatus": "={{$json.PaymentStatus}}",
+            "OrderNumber": "={{$json.OrderNumber}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3680,
+        2224
+      ],
+      "id": "node-gs-append-headers-cart",
+      "name": "GS: Append Headers (cart)"
     },
     {
       "parameters": {
@@ -111,7 +196,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['chat_id','Fulfillment','CurrentStep','Phone','Address','Zone','DeliveryFee','PaymentStatus','LastOrderNumber','CartFrozen','UpdatedAt'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('UserStates sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['chat_id','Fulfillment','CurrentStep','Phone','Address','Zone','DeliveryFee','PaymentStatus','LastOrderNumber','CartFrozen','UpdatedAt'];if(rows.length===0||cols.size===0){return [{json:{_repair:true,headers:need}}];}const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('UserStates sheet missing columns: '+miss.join(', '));return [{json:$json}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -121,6 +206,52 @@
       ],
       "id": "node-schema-check-state",
       "name": "Schema Check: UserStates"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);if(rows.length===0){return [{json:{chat_id:'chat_id',Fulfillment:'Fulfillment',CurrentStep:'CurrentStep',Phone:'Phone',Address:'Address',Zone:'Zone',DeliveryFee:'DeliveryFee',PaymentStatus:'PaymentStatus',LastOrderNumber:'LastOrderNumber',CartFrozen:'CartFrozen',UpdatedAt:'UpdatedAt'}}];}return [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3904,
+        2480
+      ],
+      "id": "node-repair-headers-state",
+      "name": "Repair Headers: State"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{$json.chat_id}}",
+            "Fulfillment": "={{$json.Fulfillment}}",
+            "CurrentStep": "={{$json.CurrentStep}}",
+            "Phone": "={{$json.Phone}}",
+            "Address": "={{$json.Address}}",
+            "Zone": "={{$json.Zone}}",
+            "DeliveryFee": "={{$json.DeliveryFee}}",
+            "PaymentStatus": "={{$json.PaymentStatus}}",
+            "LastOrderNumber": "={{$json.LastOrderNumber}}",
+            "CartFrozen": "={{$json.CartFrozen}}",
+            "UpdatedAt": "={{$json.UpdatedAt}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3680,
+        2480
+      ],
+      "id": "node-gs-append-headers-state",
+      "name": "GS: Append Headers (state)"
     },
     {
       "parameters": {
@@ -139,7 +270,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['ZoneName','Keyword','DeliveryFee','Available'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('DeliveryZones sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['ZoneName','Keyword','DeliveryFee','Available'];if(rows.length===0||cols.size===0){return [{json:{_repair:true,headers:need}}];}const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('DeliveryZones sheet missing columns: '+miss.join(', '));return [{json:$json}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -149,6 +280,45 @@
       ],
       "id": "node-schema-check-zones",
       "name": "Schema Check: Zones"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);if(rows.length===0){return [{json:{ZoneName:'ZoneName',Keyword:'Keyword',DeliveryFee:'DeliveryFee',Available:'Available'}}];}return [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3904,
+        2736
+      ],
+      "id": "node-repair-headers-zones",
+      "name": "Repair Headers: Zones"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_ZONES_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ZoneName": "={{$json.ZoneName}}",
+            "Keyword": "={{$json.Keyword}}",
+            "DeliveryFee": "={{$json.DeliveryFee}}",
+            "Available": "={{$json.Available}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3680,
+        2736
+      ],
+      "id": "node-gs-append-headers-zones",
+      "name": "GS: Append Headers (zones)"
     },
     {
       "parameters": {
@@ -167,7 +337,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['chat_id','OrderNumber','PaymentStatus','Fulfillment','Subtotal','DeliveryFee','Total','Items','Timestamp'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Orders sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['chat_id','OrderNumber','PaymentStatus','Fulfillment','Subtotal','DeliveryFee','Total','Items','Timestamp'];if(rows.length===0||cols.size===0){return [{json:{_repair:true,headers:need}}];}const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Orders sheet missing columns: '+miss.join(', '));return [{json:$json}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -177,6 +347,50 @@
       ],
       "id": "node-schema-check-orders",
       "name": "Schema Check: Orders"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const need=['chat_id','OrderNumber','PaymentStatus','Fulfillment','Subtotal','DeliveryFee','Total','Items','Timestamp'];if(rows.length===0){return [{json:{chat_id:'chat_id',OrderNumber:'OrderNumber',PaymentStatus:'PaymentStatus',Fulfillment:'Fulfillment',Subtotal:'Subtotal',DeliveryFee:'DeliveryFee',Total:'Total',Items:'Items',Timestamp:'Timestamp'}}];}return [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3904,
+        2992
+      ],
+      "id": "node-repair-headers-orders",
+      "name": "Repair Headers: Orders"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_ORDERS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{$json.chat_id}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "PaymentStatus": "={{$json.PaymentStatus}}",
+            "Fulfillment": "={{$json.Fulfillment}}",
+            "Subtotal": "={{$json.Subtotal}}",
+            "DeliveryFee": "={{$json.DeliveryFee}}",
+            "Total": "={{$json.Total}}",
+            "Items": "={{$json.Items}}",
+            "Timestamp": "={{$json.Timestamp}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3680,
+        2992
+      ],
+      "id": "node-gs-append-headers-orders",
+      "name": "GS: Append Headers (orders)"
     },
     {
       "parameters": {
@@ -195,7 +409,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['Timestamp','chat_id','Event','OrderNumber','Payload'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Events sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['Timestamp','chat_id','Event','OrderNumber','Payload'];if(rows.length===0||cols.size===0){return [{json:{_repair:true,headers:need}}];}const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Events sheet missing columns: '+miss.join(', '));return [{json:$json}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -205,6 +419,46 @@
       ],
       "id": "node-schema-check-events",
       "name": "Schema Check: Events"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);if(rows.length===0){return [{json:{Timestamp:'Timestamp',chat_id:'chat_id',Event:'Event',OrderNumber:'OrderNumber',Payload:'Payload'}}];}return [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3904,
+        3248
+      ],
+      "id": "node-repair-headers-events",
+      "name": "Repair Headers: Events"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3680,
+        3248
+      ],
+      "id": "node-gs-append-headers-events",
+      "name": "GS: Append Headers (events)"
     },
     {
       "parameters": {
@@ -2449,6 +2703,28 @@
     "name": "Cron: Analytics"
   },
   {
+    "parameters": {},
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+      -4240,
+      3680
+    ],
+    "id": "node-manual-cleanup",
+    "name": "Manual: Cleanup"
+  },
+  {
+    "parameters": {},
+    "type": "n8n-nodes-base.manualTrigger",
+    "typeVersion": 1,
+    "position": [
+      -4240,
+      3840
+    ],
+    "id": "node-manual-analytics",
+    "name": "Manual: Analytics"
+  },
+  {
     "parameters": {
       "documentId": "= {{$env.GS_DOC_ID}}",
       "sheetName": "= {{$env.GS_EVENTS_GID}}",
@@ -2560,7 +2836,10 @@
         ]
       ]
     },
-    "GS: Read Events (analytics)": {
+    "Manual: Cleanup": {
+      "main": [
+        [
+          { "node": "GS: Read Cart (cleanup)", "type": "    "GS: Read Events (analytics)": {
       "main": [
         [
           { "node": "Build Daily Metrics", "type": "main", "index": 0 }
@@ -2592,6 +2871,23 @@
       "main": [
         [
           { "node": "Schema Check: Menu", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Repair Headers: Menu", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Repair Headers: Menu": {
+      "main": [
+        [
+          { "node": "GS: Append Headers (menu)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Append Headers (menu)": {
+      "main": [
+        [
+          { "node": "Schema Check: Menu", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -2603,6 +2899,23 @@
       ]
     },
     "GS: Read Cart (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: Cart", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Repair Headers: Cart", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Repair Headers: Cart": {
+      "main": [
+        [
+          { "node": "GS: Append Headers (cart)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Append Headers (cart)": {
       "main": [
         [
           { "node": "Schema Check: Cart", "type": "main", "index": 0 }
@@ -2620,6 +2933,23 @@
       "main": [
         [
           { "node": "Schema Check: UserStates", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Repair Headers: State", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Repair Headers: State": {
+      "main": [
+        [
+          { "node": "GS: Append Headers (state)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Append Headers (state)": {
+      "main": [
+        [
+          { "node": "Schema Check: UserStates", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -2634,6 +2964,23 @@
       "main": [
         [
           { "node": "Schema Check: Zones", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Repair Headers: Zones", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Repair Headers: Zones": {
+      "main": [
+        [
+          { "node": "GS: Append Headers (zones)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Append Headers (zones)": {
+      "main": [
+        [
+          { "node": "Schema Check: Zones", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -2643,8 +2990,26 @@
           { "node": "GS: Read Orders (schema)", "type": "main", "index": 0 }
         ]
       ]
-    },
+  _code  new}</,
+  },
     "GS: Read Orders (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: Orders", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Repair Headers: Orders", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Repair Headers: Orders": {
+      "main": [
+        [
+          { "node": "GS: Append Headers (orders)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Append Headers (orders)": {
       "main": [
         [
           { "node": "Schema Check: Orders", "type": "main", "index": 0 }
@@ -2659,6 +3024,23 @@
       ]
     },
     "GS: Read Events (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: Events", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Repair Headers: Events", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Repair Headers: Events": {
+      "main": [
+        [
+          { "node": "GS: Append Headers (events)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Append Headers (events)": {
       "main": [
         [
           { "node": "Schema Check: Events", "type": "main", "index": 0 }
