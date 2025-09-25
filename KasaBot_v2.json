@@ -27,7 +27,7 @@
     },
     {
       "parameters": {
-        "jsCode": "/** Env Check: ensure required env vars exist, else stop with a clear error */\nconst required = [\n  'TG_BOT_TOKEN','GS_DOC_ID','GS_MENU_GID','GS_CART_GID','GS_STATE_GID','GS_ZONES_GID',\n  'ADMIN_CHAT_ID','KITCHEN_CHAT_ID','MOMO_NUMBER','MOMO_NAME','GS_ORDERS_GID','GS_EVENTS_GID',\n  'OPEN_HOUR','CLOSE_HOUR','HOLIDAYS'\n];\nconst missing = required.filter(k => !$env[k]);\nif (missing.length) {\n  throw new Error('Missing environment variables: ' + missing.join(', '));\n}\nreturn [{ json: $json }];"
+        "jsCode": "/** Env Check: ensure required env vars exist, else stop with a clear error */\nconst required = [\n  'TG_BOT_TOKEN','GS_DOC_ID','GS_MENU_GID','GS_CART_GID','GS_STATE_GID','GS_ZONES_GID',\n  'ADMIN_CHAT_ID','KITCHEN_CHAT_ID','MOMO_NUMBER','MOMO_NAME','GS_ORDERS_GID','GS_EVENTS_GID',\n  'OPEN_HOUR','CLOSE_HOUR','HOLIDAYS','GS_METRICS_GID','GS_ARCHIVE_GID','RETENTION_DAYS'\n];\nconst missing = required.filter(k => !$env[k]);\nif (missing.length) {\n  throw new Error('Missing environment variables: ' + missing.join(', '));\n}\nreturn [{ json: $json }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -750,6 +750,46 @@
         }
       }
     },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Parse Callback')[0]?.json?.chat_id;const sku=$items('Pick Menu Item (by SKU)')[0]?.json?.SKU;return [{json:{Timestamp:$now,chat_id,Event:'add_to_cart',OrderNumber:'',Payload:JSON.stringify({sku})}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        2304
+      ],
+      "id": "node-log-add",
+      "name": "Log: add_to_cart"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1120,
+        2304
+      ],
+      "id": "node-gs-append-event-add",
+      "name": "GS: Append Event (add_to_cart)"
+    },
 
     /** ---------------- VIEW CART ---------------- */
 
@@ -803,6 +843,46 @@
       ],
       "id": "node-http-cart",
       "name": "HTTP: Send Cart"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Parse Callback')[0]?.json?.chat_id;return [{json:{Timestamp:$now,chat_id,Event:'view_cart',OrderNumber:'',Payload:JSON.stringify({})}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2240,
+        2560
+      ],
+      "id": "node-log-view-cart",
+      "name": "Log: view_cart"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2016,
+        2560
+      ],
+      "id": "node-gs-append-event-view-cart",
+      "name": "GS: Append Event (view_cart)"
     },
 
     /** ---------------- CLEAR CART ---------------- */
@@ -886,6 +966,46 @@
       ],
       "id": "node-http-cleared",
       "name": "HTTP: Send Cleared"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Parse Callback')[0]?.json?.chat_id;return [{json:{Timestamp:$now,chat_id,Event:'clear_cart',OrderNumber:'',Payload:JSON.stringify({})}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1792,
+        2816
+      ],
+      "id": "node-log-clear-cart",
+      "name": "Log: clear_cart"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1568,
+        2816
+      ],
+      "id": "node-gs-append-event-clear-cart",
+      "name": "GS: Append Event (clear_cart)"
     },
 
     /** ---------------- CHECKOUT ---------------- */
@@ -975,6 +1095,46 @@
       ],
       "id": "node-http-checkout",
       "name": "HTTP: Send Checkout Summary"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Parse Callback')[0]?.json?.chat_id;return [{json:{Timestamp:$now,chat_id,Event:'checkout',OrderNumber:'',Payload:JSON.stringify({})}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2016,
+        3168
+      ],
+      "id": "node-log-checkout",
+      "name": "Log: checkout"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1792,
+        3168
+      ],
+      "id": "node-gs-append-event-checkout",
+      "name": "GS: Append Event (checkout)"
     },
 
     /** ---------------- FULFILLMENT ---------------- */
@@ -1498,6 +1658,46 @@
     },
     {
       "parameters": {
+        "jsCode": "const chat_id=$items('Parse Callback')[0]?.json?.chat_id;const ref=String(($items('Build Payment Instructions')[0]?.json?.payload?.text||'').match(/Ref: \\*(.*?)\\*/)?.[1]||'');return [{json:{Timestamp:$now,chat_id,Event:'payment_instructions',OrderNumber:ref,Payload:JSON.stringify({ref})}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2016,
+        4448
+      ],
+      "id": "node-log-pay-instr",
+      "name": "Log: payment_instructions"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1792,
+        4448
+      ],
+      "id": "node-gs-append-event-pay-instr",
+      "name": "GS: Append Event (payment_instructions)"
+    },
+    {
+      "parameters": {
         "documentId": "= {{$env.GS_DOC_ID}}",
         "sheetName": "= {{$env.GS_CART_GID}}",
         "filtersUI": {
@@ -1926,6 +2126,46 @@
     },
     {
       "parameters": {
+        "jsCode": "const chat_id=$items('Extract Admin Action (Approve)')[0]?.json?.chat_id;const ref=$items('Extract Admin Action (Approve)')[0]?.json?.ref||'';return [{json:{Timestamp:$now,chat_id,Event:'admin_approve',OrderNumber:ref,Payload:JSON.stringify({ref})}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        4640
+      ],
+      "id": "node-log-admin-approve",
+      "name": "Log: admin_approve"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        4640
+      ],
+      "id": "node-gs-append-event-admin-approve",
+      "name": "GS: Append Event (admin_approve)"
+    },
+    {
+      "parameters": {
         "jsCode": "const text='✅ *PAID ORDER*\\nRef: *'+$json.ref+'*';return [{json:{method:'sendMessage',payload:{chat_id: {{$env.KITCHEN_CHAT_ID}}, text, parse_mode:'Markdown'}}}];"
       },
       "type": "n8n-nodes-base.code",
@@ -2031,9 +2271,309 @@
       ],
       "id": "node-http-customer-reject",
       "name": "HTTP Send → Customer Reject"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Extract Admin Action (Reject)')[0]?.json?.chat_id;const ref=$items('Extract Admin Action (Reject)')[0]?.json?.ref||'';return [{json:{Timestamp:$now,chat_id,Event:'admin_reject',OrderNumber:ref,Payload:JSON.stringify({ref})}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        4960
+      ],
+      "id": "node-log-admin-reject",
+      "name": "Log: admin_reject"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        4960
+      ],
+      "id": "node-gs-append-event-admin-reject",
+      "name": "GS: Append Event (admin_reject)"
     }
-  ],
+  ,
+
+  /** SCHEDULED CLEANUP WORKFLOW NODES */
+  {
+    "parameters": {
+      "triggerTimes": {
+        "item": [
+          {
+            "hour": 2,
+            "minute": 0
+          }
+        ]
+      }
+    },
+    "type": "n8n-nodes-base.cron",
+    "typeVersion": 1.1,
+    "position": [
+      -4240,
+      3360
+    ],
+    "id": "node-cron-cleanup",
+    "name": "Cron: Cleanup"
+  },
+  {
+    "parameters": {
+      "documentId": "= {{$env.GS_DOC_ID}}",
+      "sheetName": "= {{$env.GS_CART_GID}}",
+      "options": {}
+    },
+    "type": "n8n-nodes-base.googleSheets",
+    "typeVersion": 4.7,
+    "position": [
+      -4016,
+      3360
+    ],
+    "id": "node-gs-read-cart-cleanup",
+    "name": "GS: Read Cart (cleanup)"
+  },
+  {
+    "parameters": {
+      "jsCode": "const days=Number($env.RETENTION_DAYS||7);const cutoff=Date.now()-days*24*60*60*1000;const rows=$input.all().map(i=>i.json);const stale=rows.filter(r=>{const ts=Date.parse(r.Timestamp||0)||0;const status=String(r.PaymentStatus||'').toUpperCase();const frozen=String(r.Frozen||'').toUpperCase()==='TRUE';return ts && ts<cutoff && (status!=='PENDING' || frozen);});return stale.map(r=>({json:{...r,ArchivedAt:$now}}));"
+    },
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+      -3792,
+      3296
+    ],
+    "id": "node-build-archive-rows",
+    "name": "Build Archive Rows"
+  },
+  {
+    "parameters": {
+      "operation": "append",
+      "documentId": "= {{$env.GS_DOC_ID}}",
+      "sheetName": "= {{$env.GS_ARCHIVE_GID}}",
+      "columns": {
+        "mappingMode": "defineBelow",
+        "value": {
+          "Timestamp": "={{$json.Timestamp}}",
+          "chat_id": "={{$json.chat_id}}",
+          "LineId": "={{$json.LineId}}",
+          "SKU": "={{$json.SKU}}",
+          "Dish": "={{$json.Dish}}",
+          "Price": "={{$json.Price}}",
+          "Quantity": "={{$json.Quantity}}",
+          "LineTotal": "={{$json.LineTotal}}",
+          "PaymentStatus": "={{$json.PaymentStatus}}",
+          "OrderNumber": "={{$json.OrderNumber}}",
+          "Frozen": "={{$json.Frozen}}",
+          "ArchivedAt": "={{$json.ArchivedAt}}"
+        },
+        "matchingColumns": []
+      },
+      "options": {}
+    },
+    "type": "n8n-nodes-base.googleSheets",
+    "typeVersion": 4.7,
+    "position": [
+      -3568,
+      3296
+    ],
+    "id": "node-gs-append-archive",
+    "name": "GS: Append Archive"
+  },
+  {
+    "parameters": {
+      "jsCode": "return $items('GS: Read Cart (cleanup)').map(i=>({json:{row_number:i.json.row_number}}));"
+    },
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+      -3344,
+      3296
+    ],
+    "id": "node-collect-purge",
+    "name": "Collect Rows To Purge"
+  },
+  {
+    "parameters": {
+      "operation": "delete",
+      "documentId": "= {{$env.GS_DOC_ID}}",
+      "sheetName": "= {{$env.GS_CART_GID}}",
+      "startIndex": "={{$json.row_number}}"
+    },
+    "type": "n8n-nodes-base.googleSheets",
+    "typeVersion": 4.7,
+    "position": [
+      -3120,
+      3296
+    ],
+    "id": "node-gs-delete-row-cleanup",
+    "name": "GS: Delete Row (cleanup)"
+  },
+
+  /** DAILY ANALYTICS WORKFLOW NODES */
+  {
+    "parameters": {
+      "triggerTimes": {
+        "item": [
+          {
+            "hour": 2,
+            "minute": 10
+          }
+        ]
+      }
+    },
+    "type": "n8n-nodes-base.cron",
+    "typeVersion": 1.1,
+    "position": [
+      -4240,
+      3520
+    ],
+    "id": "node-cron-analytics",
+    "name": "Cron: Analytics"
+  },
+  {
+    "parameters": {
+      "documentId": "= {{$env.GS_DOC_ID}}",
+      "sheetName": "= {{$env.GS_EVENTS_GID}}",
+      "options": {}
+    },
+    "type": "n8n-nodes-base.googleSheets",
+    "typeVersion": 4.7,
+    "position": [
+      -4016,
+      3520
+    ],
+    "id": "node-gs-read-events-analytics",
+    "name": "GS: Read Events (analytics)"
+  },
+  {
+    "parameters": {
+      "jsCode": "const rows=$input.all().map(i=>i.json);const now=new Date();const y=now.getFullYear(),m=(now.getMonth()+1).toString().padStart(2,'0'),d=now.getDate().toString().padStart(2,'0');const day=`${y}-${m}-${d}`;const start=new Date(y,now.getMonth(),now.getDate());const end=new Date(y,now.getMonth(),now.getDate()+1);function inDay(ts){const t=Date.parse(ts||0)||0;return t>=start.getTime() && t<end.getTime();}const events=rows.filter(r=>inDay(r.Timestamp));const tally={menu_open:0,add_to_cart:0,view_cart:0,clear_cart:0,checkout:0,payment_instructions:0,pay_confirm:0,admin_approve:0,admin_reject:0};for(const r of events){const e=String(r.Event||'');if(tally.hasOwnProperty(e)) tally[e]++;}return [{json:{Day:day,...tally,GeneratedAt:$now}}];"
+    },
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+      -3792,
+      3520
+    ],
+    "id": "node-build-daily-metrics",
+    "name": "Build Daily Metrics"
+  },
+  {
+    "parameters": {
+      "operation": "append",
+      "documentId": "= {{$env.GS_DOC_ID}}",
+      "sheetName": "= {{$env.GS_METRICS_GID}}",
+      "columns": {
+        "mappingMode": "defineBelow",
+        "value": {
+          "Day": "={{$json.Day}}",
+          "menu_open": "={{$json.menu_open}}",
+          "add_to_cart": "={{$json.add_to_cart}}",
+          "view_cart": "={{$json.view_cart}}",
+          "clear_cart": "={{$json.clear_cart}}",
+          "checkout": "={{$json.checkout}}",
+          "payment_instructions": "={{$json.payment_instructions}}",
+          "pay_confirm": "={{$json.pay_confirm}}",
+          "admin_approve": "={{$json.admin_approve}}",
+          "admin_reject": "={{$json.admin_reject}}",
+          "GeneratedAt": "={{$json.GeneratedAt}}"
+        },
+        "matchingColumns": []
+      },
+      "options": {}
+    },
+    "type": "n8n-nodes-base.googleSheets",
+    "typeVersion": 4.7,
+    "position": [
+      -3568,
+      3520
+    ],
+    "id": "node-gs-append-metrics",
+    "name": "GS: Append Metrics"
+  },
+
   "connections": {
+
+    /** SCHEDULED CLEANUP */
+    "Cron: Cleanup": {
+      "main": [
+        [
+          { "node": "GS: Read Cart (cleanup)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Cart (cleanup)": {
+      "main": [
+        [
+          { "node": "Build Archive Rows", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Collect Rows To Purge", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Archive Rows": {
+      "main": [
+        [
+          { "node": "GS: Append Archive", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Append Archive": {
+      "main": [
+        [
+          { "node": "Collect Rows To Purge", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Collect Rows To Purge": {
+      "main": [
+        [
+          { "node": "GS: Delete Row (cleanup)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** DAILY ANALYTICS */
+    "Cron: Analytics": {
+      "main": [
+        [
+          { "node": "GS: Read Events (analytics)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Events (analytics)": {
+      "main": [
+        [
+          { "node": "Build Daily Metrics", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Daily Metrics": {
+      "main": [
+        [
+          { "node": "GS: Append Metrics", "type": "main", "index": 0 }
+        ]
+      ]
+    },
     "Telegram Trigger": {
       "main": [
         [
@@ -2274,6 +2814,20 @@
         ]
       ]
     },
+    "Ack Added": {
+      "main": [
+        [
+          { "node": "Log: add_to_cart", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Log: add_to_cart": {
+      "main": [
+        [
+          { "node": "GS: Append Event (add_to_cart)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
 
     /** VIEW */
     "GS: Read Cart (view)": {
@@ -2287,6 +2841,20 @@
       "main": [
         [
           { "node": "HTTP: Send Cart", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "HTTP: Send Cart": {
+      "main": [
+        [
+          { "node": "Log: view_cart", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Log: view_cart": {
+      "main": [
+        [
+          { "node": "GS: Append Event (view_cart)", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -2320,6 +2888,20 @@
         ]
       ]
     },
+    "HTTP: Send Cleared": {
+      "main": [
+        [
+          { "node": "Log: clear_cart", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Log: clear_cart": {
+      "main": [
+        [
+          { "node": "GS: Append Event (clear_cart)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
 
     /** CHECKOUT */
     "GS: Read Cart (checkout)": {
@@ -2350,6 +2932,20 @@
         ]
       ]
     },
+    "HTTP: Send Checkout Summary": {
+      "main": [
+        [
+          { "node": "Log: checkout", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Log: checkout": {
+      "main": [
+        [
+          { "node": "GS: Append Event (checkout)", "type": "main", "index": 0 }
+        ]
+      ]
+ _code  new </}, },
 
     /** FULFILLMENT */
     "Set Delivery Context": {
@@ -2515,6 +3111,20 @@
         ]
       ]
     },
+    "HTTP: Send Payment Instructions": {
+      "main": [
+        [
+          { "node": "Log: payment_instructions", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Log: payment_instructions": {
+      "main": [
+        [
+          { "node": "GS: Append Event (payment_instructions)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
     "GS: Read Cart (tag ref)": {
       "main": [
         [
@@ -2660,7 +3270,17 @@
     "HTTP Send → Customer Paid": {
       "main": [
         [
+          { "node": "Log: admin_approve", "type": "main", "index": 0 }
+        ],
+        [
           { "node": "Build Kitchen Paid", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Log: admin_approve": {
+      "main": [
+        [
+          { "node": "GS: Append Event (admin_approve)", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -2697,6 +3317,20 @@
       "main": [
         [
           { "node": "HTTP Send → Customer Reject", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "HTTP Send → Customer Reject": {
+      "main": [
+        [
+          { "node": "Log: admin_reject", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Log: admin_reject": {
+      "main": [
+        [
+          { "node": "GS: Append Event (admin_reject)", "type": "main", "index": 0 }
         ]
       ]
     }
