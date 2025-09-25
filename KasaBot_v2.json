@@ -40,6 +40,146 @@
     },
     {
       "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_MENU_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4128,
+        1840
+      ],
+      "id": "node-gs-schema-menu",
+      "name": "GS: Read Menu (schema)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['SKU','Dish','Price'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Menu sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4128,
+        1968
+      ],
+      "id": "node-schema-check-menu",
+      "name": "Schema Check: Menu"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4128,
+        2096
+      ],
+      "id": "node-gs-schema-cart",
+      "name": "GS: Read Cart (schema)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['chat_id','SKU','Dish','Price','Quantity','LineTotal','row_number','Frozen','PaymentStatus','OrderNumber'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Cart sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4128,
+        2224
+      ],
+      "id": "node-schema-check-cart",
+      "name": "Schema Check: Cart"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4128,
+        2352
+      ],
+      "id": "node-gs-schema-state",
+      "name": "GS: Read State (schema)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['chat_id','Fulfillment','CurrentStep','Phone','Address','Zone','DeliveryFee','PaymentStatus','LastOrderNumber','CartFrozen','UpdatedAt'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('UserStates sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4128,
+        2480
+      ],
+      "id": "node-schema-check-state",
+      "name": "Schema Check: UserStates"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_ZONES_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4128,
+        2608
+      ],
+      "id": "node-gs-schema-zones",
+      "name": "GS: Read Zones (schema)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['ZoneName','Keyword','DeliveryFee','Available'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('DeliveryZones sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4128,
+        2736
+      ],
+      "id": "node-schema-check-zones",
+      "name": "Schema Check: Zones"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_ORDERS_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4128,
+        2864
+      ],
+      "id": "node-gs-schema-orders",
+      "name": "GS: Read Orders (schema)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['chat_id','OrderNumber','PaymentStatus','Fulfillment','Subtotal','DeliveryFee','Total','Items','Timestamp'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Orders sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4128,
+        2992
+      ],
+      "id": "node-schema-check-orders",
+      "name": "Schema Check: Orders"
+    },
+    {
+      "parameters": {
         "jsCode": "/** Normalize Telegram update into one compact shape */\nconst m = $json.message || {};\nconst c = $json.callback_query || {};\nconst isCb = !!c.data;\nconst chat_id = isCb ? c.message?.chat?.id : m.chat?.id;\nconst text = (m.text || '').trim();\nconst data = isCb ? (c.data || '').trim() : '';\nconst message_id = isCb ? c.message?.message_id : m.message_id;\nconst username = (m.from?.username || c.from?.username || '') || '';\nconst cqid = c.id || null;\nreturn [{ json: { chat_id, text, data, is_callback: isCb, message_id, username, cqid, _raw: $json } }];"
       },
       "type": "n8n-nodes-base.code",
@@ -1244,6 +1384,152 @@
       "id": "node-gs-update-lines-ref",
       "name": "GS: Update Lines (set ref)"
     },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1568,
+        4576
+      ],
+      "id": "node-gs-read-cart-freeze",
+      "name": "GS: Read Cart (freeze on pay)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const chat_id=String($items('Parse Callback')[0].json.chat_id);let ref='';for(const r of rows){if(String(r.chat_id)===chat_id && r.OrderNumber){ref=String(r.OrderNumber);break;}}if(!ref){return [];}const out=[];for(const r of rows){const status=String(r.PaymentStatus||'').toUpperCase();const frozen=String(r.Frozen||'').toUpperCase()==='TRUE';if(String(r.chat_id)!==chat_id||String(r.OrderNumber)!==ref||status==='PAID'||frozen) continue;out.push({json:{row_number:Number(r.row_number),Frozen:'TRUE'}});}return out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        4576
+      ],
+      "id": "node-build-freeze-updates",
+      "name": "Build Freeze Updates (on pay)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{$json.row_number}}",
+            "Frozen": "={{$json.Frozen}}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1120,
+        4576
+      ],
+      "id": "node-gs-update-lines-freeze",
+      "name": "GS: Update Cart Lines (freeze on pay)"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1568,
+        4448
+      ],
+      "id": "node-gs-read-cart-snapshot",
+      "name": "GS: Read Cart (for snapshot)"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1568,
+        4336
+      ],
+      "id": "node-gs-read-state-snapshot",
+      "name": "GS: Read State (for snapshot)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cart=$items('GS: Read Cart (for snapshot)').map(i=>i.json).filter(r=>String(r.PaymentStatus||'').toUpperCase()!=='PAID');const state=$items('GS: Read State (for snapshot)')[0]?.json||{};const chat_id=String($items('Parse Callback')[0].json.chat_id);const ref=(cart.find(r=>String(r.chat_id)===chat_id && r.OrderNumber)||{}).OrderNumber||'';if(!ref) return [];const money=v=>Number(v||0);let subtotal=0;const items=cart.filter(r=>String(r.chat_id)===chat_id&&String(r.OrderNumber)===ref).map(r=>{const p=Number(r.Price)||0;const q=Number(r.Quantity)||1;const lt=Number(r.LineTotal||p*q);subtotal+=lt;return {sku:r.SKU,dish:r.Dish,qty:q,price:p,total:lt};});const fee=money(state.DeliveryFee||0);const total=subtotal+fee;const payload={chat_id,OrderNumber:ref,PaymentStatus:'PENDING',Fulfillment:String(state.Fulfillment||'').toLowerCase(),Subtotal:subtotal,DeliveryFee:fee,Total:total,Items:JSON.stringify(items),Timestamp:$now};return [{json:payload}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        4384
+      ],
+      "id": "node-build-order-snapshot",
+      "name": "Build Order Snapshot"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_ORDERS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{$json.chat_id}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "PaymentStatus": "={{$json.PaymentStatus}}",
+            "Fulfillment": "={{$json.Fulfillment}}",
+            "Subtotal": "={{$json.Subtotal}}",
+            "DeliveryFee": "={{$json.DeliveryFee}}",
+            "Total": "={{$json.Total}}",
+            "Items": "={{$json.Items}}",
+            "Timestamp": "={{$json.Timestamp}}"
+          },
+          "matchingColumns": [
+            "chat_id",
+            "OrderNumber"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1120,
+        4384
+      ],
+      "id": "node-gs-append-orders",
+      "name": "GS: Append/Update Orders"
+    },
 
     /** ---------------- ADMIN REVIEW (APPROVE/REJECT) ---------------- */
 
@@ -1586,6 +1872,76 @@
     "Env Check": {
       "main": [
         [
+          { "node": "GS: Read Menu (schema)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Menu (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: Menu", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Schema Check: Menu": {
+      "main": [
+        [
+          { "node": "GS: Read Cart (schema)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Cart (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: Cart", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Schema Check: Cart": {
+      "main": [
+        [
+          { "node": "GS: Read State (schema)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read State (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: UserStates", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Schema Check: UserStates": {
+      "main": [
+        [
+          { "node": "GS: Read Zones (schema)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Zones (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: Zones", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Schema Check: Zones": {
+      "main": [
+        [
+          { "node": "GS: Read Orders (schema)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Orders (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: Orders", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Schema Check: Orders": {
+      "main": [
+        [
           { "node": "Normalize Event", "type": "main", "index": 0 }
         ]
       ]
@@ -1593,7 +1949,10 @@
     "Normalize Event": {
       "main": [
         [
-          { "node": "Parse   },
+          { "node": "Parse Callback", "type": "main", "index": 0 }
+        ]
+      ]
+    },
     "Parse Callback": {
       "main": [
         [
@@ -1936,6 +2295,9 @@
       "main": [
         [
           { "node": "Build Payment Instructions", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Read Cart (tag ref)", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -1943,6 +2305,68 @@
       "main": [
         [
           { "node": "HTTP: Send Payment Instructions", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Cart (tag ref)": {
+      "main": [
+        [
+          { "node": "Build Ref Updates", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Ref Updates": {
+      "main": [
+        [
+          { "node": "GS: Update Lines (set ref)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Update Lines (set ref)": {
+      "main": [
+        [
+          { "node": "GS: Read Cart (freeze on pay)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Read Cart (for snapshot)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Read State (for snapshot)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Cart (freeze on pay)": {
+      "main": [
+        [
+          { "node": "Build Freeze Updates (on pay)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Freeze Updates (on pay)": {
+      "main": [
+        [
+          { "node": "GS: Update Cart Lines (freeze on pay)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Cart (for snapshot)": {
+      "main": [
+        [
+          { "node": "Build Order Snapshot", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read State (for snapshot)": {
+      "main": [
+        [
+          { "node": "Build Order Snapshot", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Order Snapshot": {
+      "main": [
+        [
+          { "node": "GS: Append/Update Orders", "type": "main", "index": 0 }
         ]
       ]
     },
