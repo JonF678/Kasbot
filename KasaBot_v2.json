@@ -1,0 +1,1901 @@
+{
+  "name": "KasaBot v2",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4240,
+        1552
+      ],
+      "id": "node-telegram-trigger",
+      "name": "Telegram Trigger",
+      "webhookId": "auto-generated",
+      "credentials": {
+        "telegramApi": {
+          "id": "placeholder",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/** Normalize Telegram update into one compact shape */\nconst m = $json.message || {};\nconst c = $json.callback_query || {};\nconst isCb = !!c.data;\nconst chat_id = isCb ? c.message?.chat?.id : m.chat?.id;\nconst text = (m.text || '').trim();\nconst data = isCb ? (c.data || '').trim() : '';\nconst message_id = isCb ? c.message?.message_id : m.message_id;\nconst username = (m.from?.username || c.from?.username || '') || '';\nconst cqid = c.id || null;\nreturn [{ json: { chat_id, text, data, is_callback: isCb, message_id, username, cqid, _raw: $json } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4016,
+        1552
+      ],
+      "id": "node-normalize",
+      "name": "Normalize Event"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse callback and derive kind/action/sku/page\nconst u = $json;\nconst data = String(u.data || '').trim();\nlet kind = '', action = '', sku = '';\nif (!data && u.text) kind = 'text';\nif (data) {\n  const parts = data.split('|');\n  if (parts.length >= 3) { [kind, action, sku] = parts; }\n  else if (parts.length === 2) { [action, sku] = parts; kind = 'BTN'; }\n  else { action = parts[0] || ''; kind = 'BTN'; }\n}\nreturn [{ json: { ...u, kind, action, sku } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3792,
+        1744
+      ],
+      "id": "node-parse",
+      "name": "Parse Callback"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  { "leftValue": "={{$json.text}}", "rightValue": "/menu", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_open"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "MENU|REFRESH", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "menu_refresh"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "DETAILS|", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "details"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "ADD|", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "add"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "CART|VIEW", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "view"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "CART|CLEAR", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "clear"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "CART|CHECKOUT", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "checkout"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "FULFILL|DELIVERY", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "fulfill_delivery"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "FULFILL|PICKUP", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "fulfill_pickup"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.action || ($json.data||'').split('|')[0]}}", "rightValue": "PAY", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pay_instr"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "ADDR|CHANGE", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "addr_change"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "HELP|AGENT", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "help_agent"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -3552,
+        2048
+      ],
+      "id": "node-router",
+      "name": "Action Router"
+    },
+
+    /** ---------------- MENU FLOW ---------------- */
+
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_MENU_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        2048
+      ],
+      "id": "node-gs-read-menu",
+      "name": "GS: Read Menu"
+    },
+    {
+      "parameters": {
+        "jsCode": "const PAGE_SIZE=6;const CURRENCY='₵';const clean=v=>String(v??'').trim();const priceFmt=v=>{const n=Number(v);return Number.isFinite(n)?`${CURRENCY}${n.toFixed(2)}`:String(v)};const ctx=$items('Parse Callback')[0]?.json||$json;const chat_id=ctx.chat_id;let page=1;if(ctx.data&&ctx.data.startsWith('MENU|PAGE|')){page=Number(ctx.data.split('|')[2])||1;}const rows=$input.all().map(i=>i.json).filter(r=>String(r.Active||r.Available||'').toLowerCase()!=='false');const items=rows.map(r=>({sku:clean(r.SKU),label:`${clean(r.Dish)} — ${priceFmt(r.Price)}`}));const totalPages=Math.max(1,Math.ceil(items.length/PAGE_SIZE));page=Math.min(Math.max(1,page),totalPages);const slice=items.slice((page-1)*PAGE_SIZE,(page-1)*PAGE_SIZE+PAGE_SIZE);const kb=[];for(const it of slice){kb.push([{text:it.label,callback_data:`ADD|${it.sku}`}]);kb.push([{text:'ℹ️',callback_data:`DETAILS|${it.sku}`}]);}const nav=[];if(page>1)nav.push({text:'⬅️ Prev',callback_data:`MENU|PAGE|${page-1}`});nav.push({text:'🔄 Refresh',callback_data:'MENU|REFRESH'});if(page<totalPages)nav.push({text:'Next ➡️',callback_data:`MENU|PAGE|${page+1}`});kb.push(nav);kb.push([{text:'🧺 View Cart',callback_data:'CART|VIEW'},{text:'✅ Checkout',callback_data:'CART|CHECKOUT'},{text:'🧹 Clear',callback_data:'CART|CLEAR'}]);const text=`🍽️ *Today’s Menu*\\n\\n_Page ${page} of ${totalPages}_\\n_Tap an item to add to cart_`;return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:kb}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        2048
+      ],
+      "id": "node-build-menu",
+      "name": "Build Menu Reply"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2464,
+        2048
+      ],
+      "id": "node-http-menu",
+      "name": "HTTP: Send Menu"
+    },
+
+    /** ---------------- ADD TO CART ---------------- */
+
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_MENU_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        2304
+      ],
+      "id": "node-gs-read-menu-add",
+      "name": "GS: Read Menu (add)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cb=$items('Parse Callback')[0]?.json||{};const chat_id=String(cb.chat_id||'');const sku=String(cb.sku||'').trim();const menu=$input.all().map(i=>i.json);const row=menu.find(r=>String(r.SKU||'').trim().toUpperCase()===sku.toUpperCase());if(!chat_id||!row)return [];const price=Number(row.Price||0);return [{json:{chat_id,LineId:`${chat_id}|${row.SKU}`,SKU:row.SKU,Dish:row.Dish||row.ButtonLabel||row.SKU,Price:price,Quantity:1,LineTotal:price}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        2304
+      ],
+      "id": "node-pick-item",
+      "name": "Pick Menu Item (by SKU)"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$json.chat_id}}" },
+            { "lookupColumn": "SKU", "lookupValue": "={{$json.SKU}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2464,
+        2304
+      ],
+      "id": "node-gs-read-cart-add",
+      "name": "GS: Read Cart (add)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const evt=$items('Pick Menu Item (by SKU)')[0].json;const match=rows.find(r=>String(r.chat_id)===String(evt.chat_id)&&String(r.SKU)===String(evt.SKU)&&String(r.PaymentStatus||'').toUpperCase()!=='PAID');if(match){const qty=(Number(match.Quantity)||0)+1;const price=Number(match.Price)||0;return [{json:{row_number:match.row_number,Quantity:qty,LineTotal:qty*price}}];}else{return [{json:evt}];}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2240,
+        2304
+      ],
+      "id": "node-find-existing-line",
+      "name": "Find Existing Cart Line"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "leftValue": "={{$json.row_number}}", "rightValue": "", "operator": { "type": "notEmpty" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2016,
+        2304
+      ],
+      "id": "node-if-exists",
+      "name": "IF Exists?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{$json.row_number}}",
+            "Timestamp": "={{$now}}",
+            "Quantity": "={{$json.Quantity}}",
+            "LineTotal": "={{$json.LineTotal}}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "attemptToConvertTypes": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1792,
+        2224
+      ],
+      "id": "node-gs-update-line",
+      "name": "GS: Update Cart Line"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$now}}",
+            "chat_id": "={{$json.chat_id}}",
+            "LineId": "={{$json.LineId}}",
+            "SKU": "={{$json.SKU}}",
+            "Dish": "={{$json.Dish}}",
+            "Price": "={{$json.Price}}",
+            "Quantity": "={{$json.Quantity}}",
+            "LineTotal": "={{$json.LineTotal}}",
+            "PaymentStatus": "PENDING"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1792,
+        2384
+      ],
+      "id": "node-gs-append-line",
+      "name": "GS: Append Cart Line"
+    },
+    {
+      "parameters": {
+        "resource": "callback",
+        "queryId": "={{$items('Parse Callback')[0].json.cqid}}",
+        "additionalFields": {
+          "cache_time": 0,
+          "show_alert": false,
+          "text": "=✅ Added to cart"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1568,
+        2304
+      ],
+      "id": "node-ack-added",
+      "name": "Ack Added",
+      "webhookId": "auto-generated",
+      "credentials": {
+        "telegramApi": {
+          "id": "placeholder",
+          "name": "Telegram account"
+        }
+      }
+    },
+
+    /** ---------------- VIEW CART ---------------- */
+
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        2560
+      ],
+      "id": "node-gs-read-cart-view",
+      "name": "GS: Read Cart (view)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Parse Callback')[0].json.chat_id;const rows=$input.all().map(i=>i.json).filter(r=>String(r.PaymentStatus||'').toUpperCase()!=='PAID'&&String(r.Frozen||'').toUpperCase()!=='TRUE'&&(Number(r.Quantity)||0)>0);if(rows.length===0){return [{json:{method:'sendMessage',payload:{chat_id,text:'🧺 *Your Cart*\\n\\n_Your cart is empty._',parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'📖 View Menu',callback_data:'MENU|OPEN'}]]}}}}];}let subtotal=0;const money=v=>`₵${Number(v||0).toFixed(2)}`;const lines=rows.map(r=>{const qty=Number(r.Quantity)||1;const price=Number(r.Price)||0;subtotal+=qty*price;return `• ${r.Dish||r.SKU} x${qty} — ${money(price)}`;});const kb=[[{text:'🧾 Checkout',callback_data:'CART|CHECKOUT'}],[{text:'🧹 Clear cart',callback_data:'CART|CLEAR'},{text:'📖 View Menu',callback_data:'MENU|OPEN'}]];const text=['🧺 *Your Cart*','',...lines,'',`*Subtotal:* ${money(subtotal)}`,`*Delivery fee:* ${money(0)}`,`*Total:* ${money(subtotal)}`].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:kb}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        2560
+      ],
+      "id": "node-build-cart",
+      "name": "Build Cart Summary"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2464,
+        2560
+      ],
+      "id": "node-http-cart",
+      "name": "HTTP: Send Cart"
+    },
+
+    /** ---------------- CLEAR CART ---------------- */
+
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        2816
+      ],
+      "id": "node-gs-read-cart-clear",
+      "name": "GS: Read Cart (clear)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const chat_id=$items('Parse Callback')[0].json.chat_id;const toDelete=rows.filter(r=>String(r.PaymentStatus||'').toUpperCase()!=='PAID'&&String(r.Frozen||'').toUpperCase()!=='TRUE').map(r=>Number(r.row_number)).filter(n=>Number.isFinite(n)).sort((a,b)=>b-a);if(!toDelete.length){return [{json:{method:'sendMessage',payload:{chat_id,text:'Your cart is already empty.',parse_mode:'Markdown'}}}];}return toDelete.map(n=>({json:{chat_id,row_number:n}}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        2816
+      ],
+      "id": "node-collect-delete",
+      "name": "Collect Rows To Delete"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "startIndex": "={{$json.row_number}}"
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2464,
+        2912
+      ],
+      "id": "node-gs-delete-row",
+      "name": "GS: Delete Row"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id||$items('Parse Callback')[0].json.chat_id;return [{json:{method:'sendMessage',payload:{chat_id,text:'🧹 Cart cleared',parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'🍽️ Back to Menu',callback_data:'MENU|REFRESH'}],[{text:'🧺 View Cart',callback_data:'CART|VIEW'}]]}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2240,
+        2816
+      ],
+      "id": "node-build-cleared",
+      "name": "Reply: Cart Cleared"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2016,
+        2816
+      ],
+      "id": "node-http-cleared",
+      "name": "HTTP: Send Cleared"
+    },
+
+    /** ---------------- CHECKOUT ---------------- */
+
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        3072
+      ],
+      "id": "node-gs-read-cart-checkout",
+      "name": "GS: Read Cart (checkout)"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        3248
+      ],
+      "id": "node-gs-read-state",
+      "name": "GS: Read State"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2688,
+        3168
+      ],
+      "id": "node-merge-cart-state",
+      "name": "Join: Cart+State"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items=$input.all().map(i=>i.json);let cart=[],state={};for(const j of items){if(j.SKU||j.Dish)cart.push(j);if(j.Fulfillment||j.Zone||j.DeliveryFee)state=j;}const chat_id=$items('Parse Callback')[0].json.chat_id;const money=v=>`₵${Number(v||0).toFixed(2)}`;let subtotal=0;const lines=cart.map(r=>{const q=Number(r.Quantity)||1;const p=Number(r.Price)||0;subtotal+=q*p;return `• ${r.Dish||r.SKU} x${q} — ${money(p)}`;});const fulfill=String(state.Fulfillment||'').toLowerCase();const zone=String(state.Zone||'');const fee=Number(state.DeliveryFee||0);const total=subtotal+(fulfill==='delivery'?fee:0);const kb=[];if(!fulfill){kb.push([{text:'🚚 Delivery',callback_data:'FULFILL|DELIVERY'},{text:'🏪 Pickup',callback_data:'FULFILL|PICKUP'}]);}else if(fulfill==='delivery'){kb.push(zone?[{text:'💳 Pay now',callback_data:'PAY'}]:[{text:'📍 Add address',callback_data:'ADDR|CHANGE'}]);kb.push([{text:'Change to Pickup',callback_data:'FULFILL|PICKUP'}]);}else{kb.push([{text:'💳 Pay now',callback_data:'PAY'}]);kb.push([{text:'Change to Delivery',callback_data:'FULFILL|DELIVERY'}]);}kb.push([{text:'🧹 Clear',callback_data:'CART|CLEAR'},{text:'🍽️ Continue Shopping',callback_data:'MENU|REFRESH'}]);const text=['🧺 *Your Cart*','',...lines,'',`*Fulfillment:* ${fulfill||'—'}`,fulfill==='delivery'?`*Zone:* ${zone||'—'}`:'',fulfill==='delivery'?`*Delivery fee:* ${money(fee)}`:'',`*Subtotal:* ${money(subtotal)}`,`*Total:* ${money(total)}`].filter(Boolean).join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:kb}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2464,
+        3168
+      ],
+      "id": "node-build-checkout",
+      "name": "Build Checkout Summary"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2240,
+        3168
+      ],
+      "id": "node-http-checkout",
+      "name": "HTTP: Send Checkout Summary"
+    },
+
+    /** ---------------- FULFILLMENT ---------------- */
+
+    {
+      "parameters": {
+        "jsCode": "return [{json:{chat_id:$items('Parse Callback')[0].json.chat_id,Fulfillment:'delivery',CurrentStep:'await_phone',Zone:'',DeliveryFee:'',UpdatedAt:$now}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2912,
+        3424
+      ],
+      "id": "node-set-delivery",
+      "name": "Set Delivery Context"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{$json.chat_id}}",
+            "Fulfillment": "={{$json.Fulfillment}}",
+            "CurrentStep": "={{$json.CurrentStep}}",
+            "Zone": "={{$json.Zone}}",
+            "DeliveryFee": "={{$json.DeliveryFee}}",
+            "UpdatedAt": "={{$now}}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2688,
+        3424
+      ],
+      "id": "node-gs-update-delivery",
+      "name": "GS: Update State (delivery)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id||$items('Parse Callback')[0].json.chat_id;const text='📦 *Delivery selected.*\\nPlease reply with your *phone number* (e.g., `0241234567`).';return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'Change to Pickup',callback_data:'FULFILL|PICKUP'}]]}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2464,
+        3424
+      ],
+      "id": "node-ask-phone-delivery",
+      "name": "Ask For Phone (delivery)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2240,
+        3424
+      ],
+      "id": "node-http-ask-phone-delivery",
+      "name": "HTTP: Send Ask Phone (delivery)"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Parse Callback')[0].json.chat_id;return [{json:{chat_id,Fulfillment:'pickup',CurrentStep:'await_phone',Address:'',Zone:'',DeliveryFee:'',CartFrozen:'FALSE',UpdatedAt:$now}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2912,
+        3616
+      ],
+      "id": "node-set-pickup",
+      "name": "Set Pickup Context"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{$json.chat_id}}",
+            "Fulfillment": "={{$json.Fulfillment}}",
+            "CurrentStep": "={{$json.CurrentStep}}",
+            "Address": "={{$json.Address}}",
+            "Zone": "={{$json.Zone}}",
+            "DeliveryFee": "={{$json.DeliveryFee}}",
+            "CartFrozen": "={{$json.CartFrozen}}",
+            "UpdatedAt": "={{$now}}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2688,
+        3616
+      ],
+      "id": "node-gs-update-pickup",
+      "name": "GS: Update State (pickup)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id||$items('Parse Callback')[0].json.chat_id;const text='🏪 *Pickup selected.*\\nPlease reply with your *phone number* (e.g., `0241234567`).';return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'Change to Delivery',callback_data:'FULFILL|DELIVERY'}]]}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2464,
+        3616
+      ],
+      "id": "node-ask-phone-pickup",
+      "name": "Ask For Phone (pickup)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2240,
+        3616
+      ],
+      "id": "node-http-ask-phone-pickup",
+      "name": "HTTP: Send Ask Phone (pickup)"
+    },
+
+    /** ---------------- PHONE VALIDATION ---------------- */
+
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        3808
+      ],
+      "id": "node-gs-read-state-phone",
+      "name": "GS: Read State (phone)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Needs Phone? Only on text while awaiting phone\nconst evt=$items('Normalize Event')[0].json;const chat_id=String(evt.chat_id||'');if(evt.is_callback||!evt.text) return [];const rows=$input.all().map(i=>i.json);const row=rows.find(r=>String(r.chat_id)===chat_id);if(!row)return [];const fulfill=String(row.Fulfillment||'').toLowerCase();const step=String(row.CurrentStep||'').toLowerCase();const needs= (fulfill==='delivery'||fulfill==='pickup') && step==='await_phone';return needs?[{json:{...row,_chat_id:chat_id,_text:evt.text.trim()}}]:[];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        3808
+      ],
+      "id": "node-needs-phone",
+      "name": "Needs Phone?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json._chat_id||$json.chat_id;const raw=String($json._text||'').replace(/\\s+/g,'');function norm(n){if(/^\\+?233\\d{9}$/.test(n)){const tail=n.replace(/^\\+?233/,'');return {e164:'+233'+tail,local:'0'+tail};}if(/^0\\d{9}$/.test(n)){return {e164:'+233'+n.slice(1),local:n};}return null;}const r=norm(raw);return [{json:{...$json,chat_id,valid:!!r,phone_local:r?.local||'',phone_e164:r?.e164||''}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2464,
+        3808
+      ],
+      "id": "node-validate-phone",
+      "name": "Validate Ghana Phone"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "leftValue": "={{$json.valid}}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2240,
+        3808
+      ],
+      "id": "node-if-phone-valid",
+      "name": "IF — is phone valid?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{$json.chat_id}}",
+            "Phone": "={{$json.phone_local}}",
+            "CurrentStep": "await_addr",
+            "UpdatedAt": "={{$now}}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2016,
+        3728
+      ],
+      "id": "node-gs-save-phone",
+      "name": "GS: Save Phone"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id;const msg='✅ *Phone saved.*\\nNow please *type your delivery area / address*.';return [{json:{method:'sendMessage',payload:{chat_id,text:msg,parse_mode:'Markdown'}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1792,
+        3728
+      ],
+      "id": "node-reply-ask-address",
+      "name": "Reply: Ask Address"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1568,
+        3728
+      ],
+      "id": "node-http-ask-address",
+      "name": "HTTP: Send Ask Address"
+    },
+    {
+      "parameters": {
+        "jsCode": "const evt=$items('Normalize Event')[0].json;const chat_id=evt.chat_id;const text=(evt.text||'').trim();if(evt.is_callback||!text)return [];const rows=$items('GS: Read State (phone)')[0]? $items('GS: Read State (phone)').map(i=>i.json):[];const row=rows.find(r=>String(r.chat_id)===String(chat_id));if(!row)return [];const needs=(String(row.Fulfillment||'').toLowerCase()==='delivery'&&String(row.CurrentStep||'').toLowerCase()==='await_addr');return needs?[{json:{chat_id,address_text:text}}]:[];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        4000
+      ],
+      "id": "node-needs-address",
+      "name": "Needs Address?"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_ZONES_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2464,
+        4000
+      ],
+      "id": "node-gs-read-zones",
+      "name": "GS: Read Zones"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Needs Address?')[0]?.json?.chat_id||$json.chat_id;const addrRaw=$items('Needs Address?')[0]?.json?.address_text||$json.address_text||'';const addr=String(addrRaw).toLowerCase();const rows=$input.all().map(i=>i.json);const available=rows.filter(r=>String(r.Available||'').toLowerCase()==='true').map(r=>String(r.ZoneName||'').trim()).filter(Boolean);let hit=null;for(const r of rows){const tokens=String(r.Keyword||'').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);if(tokens.some(t=>addr.includes(t))){hit=r;break;}}if(hit){return [{json:{chat_id,address_text:addrRaw,found:true,Zone:String(hit.ZoneName||''),DeliveryFee:Number(hit.DeliveryFee||0)}}];}return [{json:{chat_id,address_text:addrRaw,found:false,available}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2240,
+        4000
+      ],
+      "id": "node-find-zone",
+      "name": "Find Zone"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "leftValue": "={{$json.found}}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2016,
+        4000
+      ],
+      "id": "node-if-zone-found",
+      "name": "IF Zone Found?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{$json.chat_id}}",
+            "Address": "={{$json.address_text}}",
+            "Zone": "={{$json.Zone}}",
+            "DeliveryFee": "={{$json.DeliveryFee}}",
+            "CurrentStep": "await_confirm",
+            "UpdatedAt": "={{$now}}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1792,
+        3920
+      ],
+      "id": "node-gs-update-state-address",
+      "name": "GS: Update State (address)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id;const address=String($json.address_text||'');const zone=String($json.Zone||'');const fee=Number($json.DeliveryFee||0);const feeText=`₵${fee.toFixed(2)}`;const text=['📍 *Address saved*','',`*Address:* ${address||'—'}`,`*Zone:* ${zone||'—'}`,`*Delivery fee:* ${feeText}`,'','Use the buttons below, or type a new address to change it.'].join('\\n');const reply_markup={inline_keyboard:[[{text:'✅ Checkout',callback_data:'CART|CHECKOUT'}],[{text:'✏️ Change address',callback_data:'ADDR|CHANGE'}],[{text:'🔁 Change to Pickup',callback_data:'FULFILL|PICKUP'}]]};return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1568,
+        3920
+      ],
+      "id": "node-reply-address-ok",
+      "name": "Reply: Address OK"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1344,
+        3920
+      ],
+      "id": "node-http-address-ok",
+      "name": "HTTP: Send Address OK"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id;const addr=String($json.address_text||'').trim();const shown=addr?`*\"${addr}\"*`:'*that message*';const text=`❌ Sorry, I couldn't match ${shown} to a delivery area.\\nPlease type your area again (e.g., *Osu*, *Taifa*, *Achimota*, *East Legon*), or type *pickup* to switch to pickup.`;return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown'}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1792,
+        4080
+      ],
+      "id": "node-reply-zone-not-found",
+      "name": "Reply: Zone Not Found"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1568,
+        4080
+      ],
+      "id": "node-http-zone-not-found",
+      "name": "HTTP: Send Zone Not Found"
+    },
+
+    /** ---------------- PAYMENT INSTRUCTIONS ---------------- */
+
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        4336
+      ],
+      "id": "node-gs-read-cart-pay",
+      "name": "GS: Read Cart (pay)"
+    },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2912,
+        4528
+      ],
+      "id": "node-gs-read-state-pay",
+      "name": "GS: Read State (pay)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2688,
+        4448
+      ],
+      "id": "node-merge-pay",
+      "name": "Join: Cart+State (pay)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);let cart=[],state={};for(const j of rows){if(j.SKU||j.Dish)cart.push(j);if(j.Fulfillment||j.Zone||j.DeliveryFee)state=j;}const chat_id=$items('Parse Callback')[0].json.chat_id;let subtotal=0;for(const l of cart){const lt=Number(l.LineTotal||0);const p=Number(l.Price||0);const q=Number(l.Quantity||1);subtotal+=lt>0?lt:(p*q);}const fee=Number(state.DeliveryFee||0);const total=subtotal+fee;const fmt=v=>`¢${Number(v).toLocaleString('en-GH',{maximumFractionDigits:2})}`;const ref=`SFK-${(Date.now()%1679616).toString(36).toUpperCase().padStart(4,'0')}`;const text=[`💳 *Payment for Order*\\nRef: *${ref}*`,'',`Subtotal: *${fmt(subtotal)}*`,...(fee>0?[`Delivery fee: *${fmt(fee)}*`]:[]), '━━━━━━━━━━━━━━━━━━━━', `💥 *TOTAL TO PAY: ${fmt(total)}*`, '━━━━━━━━━━━━━━━━━━━━','', '📲 *MoMo Details*', `• Number: {{$env.MOMO_NUMBER}}`, `• Name: {{$env.MOMO_NAME}}`, '', 'When paying, type this in the Reference field:', `🧾 *${ref}*`, '', 'After paying, tap *I have paid*. Or tap *Back to checkout* to review your order.' ].join('\\n');const reply_markup={inline_keyboard:[[{text:'✅ I have paid',callback_data:`PAY|CONFIRM|${ref}`}],[{text:'⬅️ Back to checkout',callback_data:'CART|CHECKOUT'}]]};return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2464,
+        4448
+      ],
+      "id": "node-build-pay",
+      "name": "Build Payment Instructions"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2240,
+        4448
+      ],
+      "id": "node-http-pay",
+      "name": "HTTP: Send Payment Instructions"
+    },
+
+    /** ---------------- ADMIN REVIEW (APPROVE/REJECT) ---------------- */
+
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "PAY|CONFIRM", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "confirm"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2912,
+        4720
+      ],
+      "id": "node-switch-confirm",
+      "name": "PAY|CONFIRM?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parts=String($json.data||'').split('|');const ref=(parts[2]||'').trim();return [{json:{chat_id:$json.chat_id,ref,$json}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        4720
+      ],
+      "id": "node-extract-ref",
+      "name": "Extract PAY|CONFIRM Ref"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['💳 *Processing your payment...*',`Ref: *${ref}*`,'','_Please wait a moment while we confirm your payment._'].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown'}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2464,
+        4720
+      ],
+      "id": "node-build-processing",
+      "name": "Build Customer Processing Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2240,
+        4720
+      ],
+      "id": "node-http-processing",
+      "name": "HTTP Send → Customer Processing"
+    },
+    {
+      "parameters": {
+        "jsCode": "const packed=JSON.stringify({ref:$json.ref,chat_id:$json.chat_id});return [{json:{method:'sendMessage',payload:{chat_id: {{$env.ADMIN_CHAT_ID}}, text:'🧾 *Payment review*\\nRef: *'+$json.ref+'*', parse_mode:'Markdown', reply_markup:{inline_keyboard:[[ {text:'✅ Approve',callback_data:'ADMIN|APPROVE|'+packed},{text:'❌ Reject',callback_data:'ADMIN|REJECT|'+packed} ]]}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2016,
+        4720
+      ],
+      "id": "node-build-admin-review",
+      "name": "Build Admin Review Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1792,
+        4720
+      ],
+      "id": "node-http-admin-review",
+      "name": "HTTP Send → Admin Review"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "ADMIN|APPROVE", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "approve"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{$json.data}}", "rightValue": "ADMIN|REJECT", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "reject"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1568,
+        4720
+      ],
+      "id": "node-switch-admin",
+      "name": "ADMIN?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parts=String($json.data||'').split('|');let packed={};try{packed=JSON.parse(parts[2]||'{}');}catch{}return [{json:{chat_id:String(packed.chat_id||''),ref:String(packed.ref||'')}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        4640
+      ],
+      "id": "node-extract-admin-approve",
+      "name": "Extract Admin Action (Approve)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['✅ *Payment received!*',`Ref: *${ref}*`,'','Thanks! We’re preparing your order.'].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'🍽️ Continue shopping',callback_data:'MENU|REFRESH'}]]}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        4640
+      ],
+      "id": "node-build-customer-paid",
+      "name": "Build Customer Paid"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text='✅ *PAID ORDER*\\nRef: *'+$json.ref+'*';return [{json:{method:'sendMessage',payload:{chat_id: {{$env.KITCHEN_CHAT_ID}}, text, parse_mode:'Markdown'}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        4816
+      ],
+      "id": "node-build-kitchen-paid",
+      "name": "Build Kitchen Paid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -896,
+        4640
+      ],
+      "id": "node-http-customer-paid",
+      "name": "HTTP Send → Customer Paid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -896,
+        4816
+      ],
+      "id": "node-http-kitchen-paid",
+      "name": "HTTP Send → Kitchen Paid"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parts=String($json.data||'').split('|');let packed={};try{packed=JSON.parse(parts[2]||'{}');}catch{}return [{json:{chat_id:String(packed.chat_id||''),ref:String(packed.ref||'')}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        4960
+      ],
+      "id": "node-extract-admin-reject",
+      "name": "Extract Admin Action (Reject)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['❌ *Order not accepted*',`Ref: *${ref}*`,'','You can try again or contact support.'].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'🧾 View menu',callback_data:'MENU|OPEN'}],[{text:'🔁 Start over',callback_data:'RESET|START'}],[{text:'☎️ Contact support',callback_data:'HELP|AGENT'}]]}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        4960
+      ],
+      "id": "node-notify-customer-reject",
+      "name": "Notify Customer (rejected)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -896,
+        4960
+      ],
+      "id": "node-http-customer-reject",
+      "name": "HTTP Send → Customer Reject"
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          { "node": "Normalize Event", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Normalize Event": {
+      "main": [
+        [
+          { "node": "Parse Callback", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Parse Callback": {
+      "main": [
+        [
+          { "node": "Action Router", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** MENU */
+    "Action Router": {
+      "main": [
+        [
+          { "node": "GS: Read Menu", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Read Menu", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Read Menu (add)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Read Cart (view)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Read Cart (clear)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Read Cart (checkout)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Set Delivery Context", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Set Pickup Context", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Reply: Ask Address", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Join: Cart+State (pay)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Reply: Contact Support", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Menu": {
+      "main": [
+        [
+          { "node": "Build Menu Reply", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Menu Reply": {
+      "main": [
+        [
+          { "node": "HTTP: Send Menu", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** ADD */
+    "GS: Read Menu (add)": {
+      "main": [
+        [
+          { "node": "Pick Menu Item (by SKU)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Pick Menu Item (by SKU)": {
+      "main": [
+        [
+          { "node": "GS: Read Cart (add)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Cart (add)": {
+      "main": [
+        [
+          { "node": "Find Existing Cart Line", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Find Existing Cart Line": {
+      "main": [
+        [
+          { "node": "IF Exists?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF Exists?": {
+      "main": [
+        [
+          { "node": "GS: Update Cart Line", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "GS: Append Cart Line", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Update Cart Line": {
+      "main": [
+        [
+          { "node": "Ack Added", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Append Cart Line": {
+      "main": [
+        [
+          { "node": "Ack Added", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** VIEW */
+    "GS: Read Cart (view)": {
+      "main": [
+        [
+          { "node": "Build Cart Summary", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Cart Summary": {
+      "main": [
+        [
+          { "node": "HTTP: Send Cart", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** CLEAR */
+    "GS: Read Cart (clear)": {
+      "main": [
+        [
+          { "node": "Collect Rows To Delete", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Collect Rows To Delete": {
+      "main": [
+        [
+          { "node": "GS: Delete Row", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Delete Row": {
+      "main": [
+        [
+          { "node": "Reply: Cart Cleared", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Reply: Cart Cleared": {
+      "main": [
+        [
+          { "node": "HTTP: Send Cleared", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** CHECKOUT */
+    "GS: Read Cart (checkout)": {
+      "main": [
+        [
+          { "node": "Join: Cart+State", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read State": {
+      "main": [
+        [
+          { "node": "Join: Cart+State", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Join: Cart+State": {
+      "main": [
+        [
+          { "node": "Build Checkout Summary", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Checkout Summary": {
+      "main": [
+        [
+          { "node": "HTTP: Send Checkout Summary", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** FULFILLMENT */
+    "Set Delivery Context": {
+      "main": [
+        [
+          { "node": "GS: Update State (delivery)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Update State (delivery)": {
+      "main": [
+        [
+          { "node": "Ask For Phone (delivery)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Ask For Phone (delivery)": {
+      "main": [
+        [
+          { "node": "HTTP: Send Ask Phone (delivery)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    "Set Pickup Context": {
+      "main": [
+        [
+          { "node": "GS: Update State (pickup)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Update State (pickup)": {
+      "main": [
+        [
+          { "node": "Ask For Phone (pickup)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Ask For Phone (pickup)": {
+      "main": [
+        [
+          { "node": "HTTP: Send Ask Phone (pickup)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** PHONE */
+    "GS: Read State (phone)": {
+      "main": [
+        [
+          { "node": "Needs Phone?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Needs Phone?": {
+      "main": [
+        [
+          { "node": "Validate Ghana Phone", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Validate Ghana Phone": {
+      "main": [
+        [
+          { "node": "IF — is phone valid?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF — is phone valid?": {
+      "main": [
+        [
+          { "node": "GS: Save Phone", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Reply: Invalid Phone", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Save Phone": {
+      "main": [
+        [
+          { "node": "Reply: Ask Address", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Reply: Ask Address": {
+      "main": [
+        [
+          { "node": "HTTP: Send Ask Address", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** ADDRESS */
+    "Needs Address?": {
+      "main": [
+        [
+          { "node": "GS: Read Zones", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Zones": {
+      "main": [
+        [
+          { "node": "Find Zone", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Find Zone": {
+      "main": [
+        [
+          { "node": "IF Zone Found?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF Zone Found?": {
+      "main": [
+        [
+          { "node": "GS: Update State (address)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Reply: Zone Not Found", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Update State (address)": {
+      "main": [
+        [
+          { "node": "Reply: Address OK", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Reply: Address OK": {
+      "main": [
+        [
+          { "node": "HTTP: Send Address OK", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Reply: Zone Not Found": {
+      "main": [
+        [
+          { "node": "HTTP: Send Zone Not Found", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** PAYMENT */
+    "Join: Cart+State (pay)": {
+      "main": [
+        [
+          { "node": "Build Payment Instructions", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Payment Instructions": {
+      "main": [
+        [
+          { "node": "HTTP: Send Payment Instructions", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** CONFIRM -> ADMIN REVIEW */
+    "PAY|CONFIRM?": {
+      "main": [
+        [
+          { "node": "Extract PAY|CONFIRM Ref", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extract PAY|CONFIRM Ref": {
+      "main": [
+        [
+          { "node": "Build Customer Processing Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Customer Processing Message": {
+      "main": [
+        [
+          { "node": "HTTP Send → Customer Processing", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "HTTP Send → Customer Processing": {
+      "main": [
+        [
+          { "node": "Build Admin Review Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Admin Review Message": {
+      "main": [
+        [
+          { "node": "HTTP Send → Admin Review", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+
+    /** ADMIN */
+    "ADMIN?": {
+      "main": [
+        [
+          { "node": "Extract Admin Action (Approve)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Extract Admin Action (Reject)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extract Admin Action (Approve)": {
+      "main": [
+        [
+          { "node": "Build Customer Paid", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Customer Paid": {
+      "main": [
+        [
+          { "node": "HTTP Send → Customer Paid", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extract Admin Action (Approve) 2": {
+      "main": [
+        [
+          { "node": "Build Kitchen Paid", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Kitchen Paid": {
+      "main": [
+        [
+          { "node": "HTTP Send → Kitchen Paid", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extract Admin Action (Reject)": {
+      "main": [
+        [
+          { "node": "Notify Customer (rejected)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Notify Customer (rejected)": {
+      "main": [
+        [
+          { "node": "HTTP Send → Customer Reject", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "timezone": "Africa/Accra"
+  }
+}
