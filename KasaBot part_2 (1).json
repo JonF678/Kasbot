@@ -1115,7 +1115,7 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
+          "value": 0,
           "mode": "list",
           "cachedResultName": "Menu",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XTREud-U1BRWVTCubTl4yvHtiTYEZ_toAIR_Bd-zE8I/edit#gid=0"
@@ -1152,7 +1152,7 @@
     },
     {
       "parameters": {
-        "url": "https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{$json}}",
@@ -1204,7 +1204,7 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
+          "value": 0,
           "mode": "list",
           "cachedResultName": "Menu",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XTREud-U1BRWVTCubTl4yvHtiTYEZ_toAIR_Bd-zE8I/edit#gid=0"
@@ -1880,7 +1880,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"chat_id\": {{$items('Parse Callback')[0].json.chat_id}},\n  \"parse_mode\": \"Markdown\",\n  \"text\": \"🧹 Cart cleared\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\\u00A0\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [{ \"text\": \"🍽️ Back to Menu\", \"callback_data\": \"MENU|REFRESH\" }],\n      [{ \"text\": \"🧺 View Cart\",     \"callback_data\": \"CART|VIEW\" }]\n    ]\n  }\n}\n",
@@ -1947,7 +1947,7 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
+          "value": 0,
           "mode": "list",
           "cachedResultName": "Menu",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XTREud-U1BRWVTCubTl4yvHtiTYEZ_toAIR_Bd-zE8I/edit#gid=0"
@@ -2470,7 +2470,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -2484,6 +2484,7 @@
       ],
       "id": "c68c1090-ec78-4452-bf55-492aaf8dc5bf",
       "name": "HTTP: Send Invalid"
+  _codeP: Send Invalid"
     },
     {
       "parameters": {
@@ -2817,7 +2818,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -2831,6 +2832,7 @@
       ],
       "id": "f7e9e3d9-ebbb-43fd-8a61-6ee3d2cd4782",
       "name": "HTTP: Send Ask Address"
+  _codeend Ask Address"
     },
     {
       "parameters": {
@@ -2861,7 +2863,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -2873,6 +2875,7 @@
         1296,
         2640
       ],
+      "id": "258eb11 ],
       "id": "258eb11e-7341-4bb7-b187-7574e64c6edb",
       "name": "HTTP: Send Ask Phone"
     },
@@ -3114,7 +3117,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
+        "url": "=https://api.telegram.org/bot{{$env.TG:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -3429,7 +3432,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/{{ $json.method }}",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{ $json.method }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -3443,24 +3446,15 @@
       ],
       "id": "c40f5024-a5c2-44be-8590-2f842d02eb9b",
       "name": "HTTP: Send Address OK"
+  _code Send Address OK"
     },
     {
       "parameters": {
-        "jsCode": "const addr = ($json.address_text ?? '').trim();\nconst shown = addr ? `*\\\"${addr}\\\"*` : '*that message*';\n\nconst text =\n  `❌ Sorry, I couldn't match ${shown} to a delivery area.\\n` +\n  (($json.available || []).length ? `We currently deliver to: ${($json.available || []).join(', ')}.\\n` : '') +\n  `Please type your area again (e.g., *Osu*, *Taifa*, *Achimota*, *East Legon*), or type *pickup* to switch to pickup.`;\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        384,
-        928
-      ],
-      "id": "8d40a581-a145-4803-a1ba-f49209bf4e0f",
-      "name": "Reply: Zone Not Found"
-    },
+        "jsCode": "// Reply: Zone Not Found — returns a Telegram payload\nconst chat_id = String($json.chat_id || '');\nconst addr = String($json.address_text || '').trim();\nconst shown = addr ? `*\\\"${addr}\\\"*` : '*that message*';\n\nconst text = [\n  `❌ Sorry, I couldn't match ${shown} to a delivery area.`,\n  (($json.available || []).length ? `We currently deliver to: ${($json.available || []).join(', ')}.` : ''),\n  'Please type your area again (e.g., *Osu*, *Taifa*, *Achimota*, *East Legon*), or type *pickup* to switch to pickup.'\n].filter(Boolean).join('\\n');\n\nreturn [{\n  json: {\n    method: 'sendMessage',\n    payload: {\n      chat_id,\n      text,\n      parse_mode: 'Markdown',\n      reply_markup: {\n        inline_keyboard: [\n          [{ text: '🏪 Switch to Pickup', callback_data: 'FULFILL|PICKUP' }],\n          [{ text: '🍽️ Back to Menu',    callback_data: 'MENU|REFRESH' }]\n        ]\n      }\,
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/{{ $json.method }}",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{ $json.method }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -3863,7 +3857,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -4054,11 +4048,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/sendMessage",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
         "options": {}
+      },
+      "type {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -5682,7 +5678,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/{{ $json.method }}",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{ $json.method }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -5700,7 +5696,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/{{ $json.method }}",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{ $json.method }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -5718,7 +5714,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/{{ $json.method }}",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{ $json.method }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -5736,7 +5732,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/{{ $json.method }}",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{ $json.method }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -5754,7 +5750,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/{{ $json.method }}",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{ $json.method }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
@@ -5772,7 +5768,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot8293686289:AAEhX_BZ-5FZBbeH3yI6PDMPVu-Ao_4CXDM/{{ $json.method }}",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{ $json.method }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $json.payload }}",
