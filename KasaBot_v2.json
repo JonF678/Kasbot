@@ -1331,16 +1331,67 @@
     },
     {
       "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1120,
+        4640
+      ],
+      "id": "node-gs-read-state-admin-approve",
+      "name": "GS: Read UserStates (admin)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const state=rows.find(r=>String(r.chat_id||'')===String($json.chat_id))||{};const status=String(state.PaymentStatus||'').toUpperCase();const frozen=String(state.CartFrozen||'').toUpperCase()==='TRUE';if(status==='PAID'||status==='REJECTED'||frozen){return [];}return [{json:$json}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        4640
+      ],
+      "id": "node-guard-reviewed-approve",
+      "name": "Guard: Already Reviewed?"
+    },
+    {
+      "parameters": {
         "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['✅ *Payment received!*',`Ref: *${ref}*`,'','Thanks! We’re preparing your order.'].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'🍽️ Continue shopping',callback_data:'MENU|REFRESH'}]]}}}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1120,
+        -672,
         4640
       ],
       "id": "node-build-customer-paid",
       "name": "Build Customer Paid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -448,
+        4640
+      ],
+      "id": "node-http-customer-paid",
+      "name": "HTTP Send → Customer Paid"
     },
     {
       "parameters": {
@@ -1349,7 +1400,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1120,
+        -672,
         4816
       ],
       "id": "node-build-kitchen-paid",
@@ -1367,25 +1418,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -896,
-        4640
-      ],
-      "id": "node-http-customer-paid",
-      "name": "HTTP Send → Customer Paid"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{$json.payload}}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -896,
+        -448,
         4816
       ],
       "id": "node-http-kitchen-paid",
@@ -1406,12 +1439,45 @@
     },
     {
       "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_STATE_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1120,
+        4960
+      ],
+      "id": "node-gs-read-state-admin-reject",
+      "name": "GS: Read UserStates (admin, reject)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const state=rows.find(r=>String(r.chat_id||'')===String($json.chat_id))||{};const status=String(state.PaymentStatus||'').toUpperCase();if(status==='PAID'||status==='REJECTED'){return [];}return [{json:$json}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        4960
+      ],
+      "id": "node-guard-reviewed-reject",
+      "name": "Guard: Already Reviewed? (reject)"
+    },
+    {
+      "parameters": {
         "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['❌ *Order not accepted*',`Ref: *${ref}*`,'','You can try again or contact support.'].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'🧾 View menu',callback_data:'MENU|OPEN'}],[{text:'🔁 Start over',callback_data:'RESET|START'}],[{text:'☎️ Contact support',callback_data:'HELP|AGENT'}]]}}}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1120,
+        -672,
         4960
       ],
       "id": "node-notify-customer-reject",
@@ -1429,7 +1495,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -896,
+        -448,
         4960
       ],
       "id": "node-http-customer-reject",
@@ -1855,6 +1921,20 @@
     "Extract Admin Action (Approve)": {
       "main": [
         [
+          { "node": "GS: Read UserStates (admin)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read UserStates (admin)": {
+      "main": [
+        [
+          { "node": "Guard: Already Reviewed?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Guard: Already Reviewed?": {
+      "main": [
+        [
           { "node": "Build Customer Paid", "type": "main", "index": 0 }
         ]
       ]
@@ -1866,7 +1946,7 @@
         ]
       ]
     },
-    "Extract Admin Action (Approve) 2": {
+    "HTTP Send → Customer Paid": {
       "main": [
         [
           { "node": "Build Kitchen Paid", "type": "main", "index": 0 }
@@ -1880,7 +1960,22 @@
         ]
       ]
     },
+
     "Extract Admin Action (Reject)": {
+      "main": [
+        [
+          { "node": "GS: Read UserStates (admin, reject)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read UserStates (admin, reject)": {
+      "main": [
+        [
+          { "node": "Guard: Already Reviewed? (reject)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Guard: Already Reviewed? (reject)": {
       "main": [
         [
           { "node": "Notify Customer (rejected)", "type": "main", "index": 0 }
