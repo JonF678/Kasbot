@@ -27,6 +27,19 @@
     },
     {
       "parameters": {
+        "jsCode": "/** Env Check: ensure required env vars exist, else stop with a clear error */\nconst required = [\n  'TG_BOT_TOKEN','GS_DOC_ID','GS_MENU_GID','GS_CART_GID','GS_STATE_GID','GS_ZONES_GID',\n  'ADMIN_CHAT_ID','KITCHEN_CHAT_ID','MOMO_NUMBER','MOMO_NAME','GS_ORDERS_GID'\n];\nconst missing = required.filter(k => !$env[k]);\nif (missing.length) {\n  throw new Error('Missing environment variables: ' + missing.join(', '));\n}\nreturn [{ json: $json }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4128,
+        1680
+      ],
+      "id": "node-env-check",
+      "name": "Env Check"
+    },
+    {
+      "parameters": {
         "jsCode": "/** Normalize Telegram update into one compact shape */\nconst m = $json.message || {};\nconst c = $json.callback_query || {};\nconst isCb = !!c.data;\nconst chat_id = isCb ? c.message?.chat?.id : m.chat?.id;\nconst text = (m.text || '').trim();\nconst data = isCb ? (c.data || '').trim() : '';\nconst message_id = isCb ? c.message?.message_id : m.message_id;\nconst username = (m.from?.username || c.from?.username || '') || '';\nconst cqid = c.id || null;\nreturn [{ json: { chat_id, text, data, is_callback: isCb, message_id, username, cqid, _raw: $json } }];"
       },
       "type": "n8n-nodes-base.code",
@@ -1171,6 +1184,66 @@
       "id": "node-http-pay",
       "name": "HTTP: Send Payment Instructions"
     },
+    {
+      "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "chat_id", "lookupValue": "={{$items('Parse Callback')[0].json.chat_id}}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2240,
+        4576
+      ],
+      "id": "node-gs-read-cart-tag",
+      "name": "GS: Read Cart (tag ref)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const src=$items('Build Payment Instructions')[0]?.json||{};const chat_id=String($items('Parse Callback')[0]?.json?.chat_id||src.chat_id||'');const ref=String(src.payload?.text?.match(/Ref: \\*(.*?)\\*/)?.[1]||src.ref||'').trim();if(!chat_id||!ref)return [];const out=[];for(const r of rows){const status=String(r.PaymentStatus||'').toUpperCase();const frozen=String(r.Frozen||'').toUpperCase()==='TRUE';if(String(r.chat_id)!==chat_id||status==='PAID'||frozen) continue;out.push({json:{row_number:Number(r.row_number),OrderNumber:ref,PaymentStatus:'PENDING'}});}return out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2016,
+        4576
+      ],
+      "id": "node-build-ref-updates",
+      "name": "Build Ref Updates"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_CART_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{$json.row_number}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "PaymentStatus": "={{$json.PaymentStatus}}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1792,
+        4576
+      ],
+      "id": "node-gs-update-lines-ref",
+      "name": "GS: Update Lines (set ref)"
+    },
 
     /** ---------------- ADMIN REVIEW (APPROVE/REJECT) ---------------- */
 
@@ -1217,7 +1290,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['💳 *Processing your payment...*',`Ref: *${ref}*`,'','_Please wait a moment while we confirm your payment._'].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown'}}}];"
+        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['💳 *Processing your payment...*',`Ref: *${ref}*`,'','_Please wait a moment while we confirm your payment._'].join('\\n');const reply_markup={inline_keyboard:[[{text:'⬅️ Back to checkout',callback_data:'CART|CHECKOUT'}]]};return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup}}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1364,7 +1437,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['✅ *Payment received!*',`Ref: *${ref}*`,'','Thanks! We’re preparing your order.'].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'🍽️ Continue shopping',callback_data:'MENU|REFRESH'}]]}}}}];"
+        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['✅ *Payment received!*',`Ref: *${ref}*`,'','Thanks! We’re preparing your order.'].join('\\n');const reply_markup={inline_keyboard:[[{text:'🍽️ Continue shopping',callback_data:'MENU|REFRESH'}],[{text:'⬅️ Back to checkout',callback_data:'CART|CHECKOUT'}]]};return [{json:{method];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1472,7 +1545,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['❌ *Order not accepted*',`Ref: *${ref}*`,'','You can try again or contact support.'].join('\\n');return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'🧾 View menu',callback_data:'MENU|OPEN'}],[{text:'🔁 Start over',callback_data:'RESET|START'}],[{text:'☎️ Contact support',callback_data:'HELP|AGENT'}]]}}}}];"
+        "jsCode": "const chat_id=$json.chat_id;const ref=$json.ref;const text=['❌ *Order not accepted*',`Ref: *${ref}*`,'','You can try again or contact support.'].join('\\n');const reply_markup={inline_keyboard:[[{text:'⬅️ Back to checkout',callback_data:'CART|CHECKOUT'}],[{text:'🧾 View menu',callback_data:'MENU|OPEN'}],[{text:'🔁 Start over',callback_data:'RESET|START'}],[{text:'☎️ Contact support',callback_data:'HELP|AGENT'}]]};return [{json:{method:'sendMessage',payload:{chat_id,text,parse_mode:'Markdown',reply_markup}}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1506,6 +1579,13 @@
     "Telegram Trigger": {
       "main": [
         [
+          { "node": "Env Check", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Env Check": {
+      "main": [
+        [
           { "node": "Normalize Event", "type": "main", "index": 0 }
         ]
       ]
@@ -1513,10 +1593,7 @@
     "Normalize Event": {
       "main": [
         [
-          { "node": "Parse Callback", "type": "main", "index": 0 }
-        ]
-      ]
-    },
+          { "node": "Parse   },
     "Parse Callback": {
       "main": [
         [
