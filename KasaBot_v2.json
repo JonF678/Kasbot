@@ -27,7 +27,7 @@
     },
     {
       "parameters": {
-        "jsCode": "/** Env Check: ensure required env vars exist, else stop with a clear error */\nconst required = [\n  'TG_BOT_TOKEN','GS_DOC_ID','GS_MENU_GID','GS_CART_GID','GS_STATE_GID','GS_ZONES_GID',\n  'ADMIN_CHAT_ID','KITCHEN_CHAT_ID','MOMO_NUMBER','MOMO_NAME','GS_ORDERS_GID'\n];\nconst missing = required.filter(k => !$env[k]);\nif (missing.length) {\n  throw new Error('Missing environment variables: ' + missing.join(', '));\n}\nreturn [{ json: $json }];"
+        "jsCode": "/** Env Check: ensure required env vars exist, else stop with a clear error */\nconst required = [\n  'TG_BOT_TOKEN','GS_DOC_ID','GS_MENU_GID','GS_CART_GID','GS_STATE_GID','GS_ZONES_GID',\n  'ADMIN_CHAT_ID','KITCHEN_CHAT_ID','MOMO_NUMBER','MOMO_NAME','GS_ORDERS_GID','GS_EVENTS_GID',\n  'OPEN_HOUR','CLOSE_HOUR','HOLIDAYS'\n];\nconst missing = required.filter(k => !$env[k]);\nif (missing.length) {\n  throw new Error('Missing environment variables: ' + missing.join(', '));\n}\nreturn [{ json: $json }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -180,6 +180,34 @@
     },
     {
       "parameters": {
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -4128,
+        3120
+      ],
+      "id": "node-gs-schema-events",
+      "name": "GS: Read Events (schema)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows=$input.all().map(i=>i.json);const cols=new Set(Object.keys(rows[0]||{}));const need=['Timestamp','chat_id','Event','OrderNumber','Payload'];const miss=need.filter(k=>!cols.has(k));if(miss.length) throw new Error('Events sheet missing columns: '+miss.join(', '));return [{json:$json}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4128,
+        3248
+      ],
+      "id": "node-schema-check-events",
+      "name": "Schema Check: Events"
+    },
+    {
+      "parameters": {
         "jsCode": "/** Normalize Telegram update into one compact shape */\nconst m = $json.message || {};\nconst c = $json.callback_query || {};\nconst isCb = !!c.data;\nconst chat_id = isCb ? c.message?.chat?.id : m.chat?.id;\nconst text = (m.text || '').trim();\nconst data = isCb ? (c.data || '').trim() : '';\nconst message_id = isCb ? c.message?.message_id : m.message_id;\nconst username = (m.from?.username || c.from?.username || '') || '';\nconst cqid = c.id || null;\nreturn [{ json: { chat_id, text, data, is_callback: isCb, message_id, username, cqid, _raw: $json } }];"
       },
       "type": "n8n-nodes-base.code",
@@ -208,6 +236,66 @@
       "parameters": {
         "rules": {
           "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  { "leftValue": "={{$json.text}}", "rightValue": "/start", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "greet"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  { "leftValue": "={{$json.text}}", "rightValue": "hi", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "greet"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  { "leftValue": "={{$json.text}}", "rightValue": "hello", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "greet"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  { "leftValue": "={{$json.text}}", "rightValue": "hey", "operator": { "type": "string", "operation": "startsWith" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "greet"
+            },
             {
               "conditions": {
                 "options": {
@@ -362,6 +450,50 @@
 
     {
       "parameters": {
+        "jsCode": "function isHoliday(dateStrList){const today=new Date();const y=today.getFullYear(),m=(today.getMonth()+1).toString().padStart(2,'0'),d=today.getDate().toString().padStart(2,'0');const todayStr=`${y}-${m}-${d}`;const list=String($env.HOLIDAYS||'').split(',').map(s=>s.trim()).filter(Boolean);return list.includes(todayStr);}function isOpen(){const now=new Date();const hour=now.getHours();const openH=Number($env.OPEN_HOUR||9);const closeH=Number($env.CLOSE_HOUR||18);if(isHoliday()) return {open:false,reason:'holiday'};const open=hour>=openH && hour<closeH;return {open,reason:open?'open':'closed'};}const status=isOpen();const chat_id=$items('Parse Callback')[0]?.json?.chat_id || $items('Normalize Event')[0]?.json?.chat_id;return [{json:{chat_id,open:status.open,reason:status.reason,openHour:$env.OPEN_HOUR,closeHour:$env.CLOSE_HOUR}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3136,
+        1920
+      ],
+      "id": "node-check-hours",
+      "name": "Check Open Status"
+    },
+    {
+      "parameters": {
+        "jsCode": "const {chat_id,open,reason,openHour,closeHour}=$json;let text='';const kb=[[{text:'📖 View Menu',callback_data:'MENU|REFRESH'}],[{text:'🧺 View Cart',callback_data:'CART|VIEW'}]];if(open){text='👋 Hi! Welcome to Sefake Kitchen. We are open. Tap below to start.';}else if(reason==='holiday'){text=`🎉 It’s a holiday today. We are closed. Opening hours: ${openHour}:00–${closeHour}:00.`;}else{text=`⏰ We are currently closed. Opening hours: ${openHour}:00–${closeHour}:00.`;}return [{json:{method:'sendMessage',payload:{chat_id,text,reply_markup:{inline_keyboard:kb}}}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3136,
+        2048
+      ],
+      "id": "node-build-greeting",
+      "name": "Build Greeting Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TG_BOT_TOKEN}}/{{$json.method}}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.payload}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2912,
+        2048
+      ],
+      "id": "node-http-greeting",
+      "name": "HTTP: Send Greeting"
+    },
+    {
+      "parameters": {
         "documentId": "= {{$env.GS_DOC_ID}}",
         "sheetName": "= {{$env.GS_MENU_GID}}",
         "options": {}
@@ -405,6 +537,46 @@
       ],
       "id": "node-http-menu",
       "name": "HTTP: Send Menu"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chat_id=$items('Parse Callback')[0]?.json?.chat_id || $json.payload?.chat_id;return [{json:{Timestamp:$now,chat_id,Event:'menu_open',OrderNumber:'',Payload:JSON.stringify({message:'menu_sent'})}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2240,
+        2048
+      ],
+      "id": "node-log-menu",
+      "name": "Log: Menu Open"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "= {{$env.GS_DOC_ID}}",
+        "sheetName": "= {{$env.GS_EVENTS_GID}}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.Timestamp}}",
+            "chat_id": "={{$json.chat_id}}",
+            "Event": "={{$json.Event}}",
+            "OrderNumber": "={{$json.OrderNumber}}",
+            "Payload": "={{$json.Payload}}"
+          },
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2016,
+        2048
+      ],
+      "id": "node-gs-append-event-menu",
+      "name": "GS: Append Event (menu)"
     },
 
     /** ---------------- ADD TO CART ---------------- */
@@ -1942,6 +2114,20 @@
     "Schema Check: Orders": {
       "main": [
         [
+          { "node": "GS: Read Events (schema)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GS: Read Events (schema)": {
+      "main": [
+        [
+          { "node": "Schema Check: Events", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Schema Check: Events": {
+      "main": [
+        [
           { "node": "Normalize Event", "type": "main", "index": 0 }
         ]
       ]
@@ -1965,10 +2151,10 @@
     "Action Router": {
       "main": [
         [
-          { "node": "GS: Read Menu", "type": "main", "index": 0 }
+          { "node": "Check Open Status", "type": "main", "index": 0 }
         ],
         [
-          { "node": "GS: Read Menu", "type": "main", "index": 0 }
+          { "nodeGS: Read Menu", "type": "main", "index": 0 }
         ],
         [
           { "node": "GS: Read Menu (add)", "type": "main", "index": 0 }
@@ -1999,6 +2185,20 @@
         ]
       ]
     },
+    "Check Open Status": {
+      "main": [
+        [
+          { "node": "Build Greeting Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Greeting Message": {
+      "main": [
+        [
+          { "node": "HTTP: Send Greeting", "type": "main", "index": 0 }
+        ]
+      ]
+    },
     "GS: Read Menu": {
       "main": [
         [
@@ -2010,6 +2210,13 @@
       "main": [
         [
           { "node": "HTTP: Send Menu", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "HTTP: Send Menu": {
+      "main": [
+        [
+          { "node": "Log: Menu Open", "type": "main", "index": 0 }
         ]
       ]
     },
@@ -2395,6 +2602,9 @@
     },
     "HTTP Send → Customer Processing": {
       "main": [
+        [
+          { "node": "Log: Pay Confirm", "type": "main", "index": 0 }
+        ],
         [
           { "node": "Build Admin Review Message", "type": "main", "index": 0 }
         ]
